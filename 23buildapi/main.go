@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/exp/rand"
 )
 
 // Model for course - file
@@ -34,7 +35,19 @@ func (c *Course) IsEmpty() bool {
 }
 
 func main() {
+	r := mux.NewRouter()
+	// seeding
+	courses = append(courses, Course{CourseId: "1", CourseName: "React JS", CoursePrice: 299, Author: &Author{Fullname: "Pavan", Website: "pavan.dev"}})
+	courses = append(courses, Course{CourseId: "2", CourseName: "NEXT JS", CoursePrice: 999, Author: &Author{Fullname: "Pavan", Website: "pavan.dev"}})
+	r.HandleFunc("/", serveHome).Methods("GET")
+	r.HandleFunc("/course", getAllCourses).Methods("GET")
+	r.HandleFunc("/course/{id}", getOneCourse).Methods("GET")
+	r.HandleFunc("/course", createOneCourse).Methods("POST")
+	r.HandleFunc("/course/{id}", updateOneCourse).Methods("PUT")
+	r.HandleFunc("/course/{id}", deleteOneCourse).Methods("DELETE")
 
+	// listen to port
+	log.Fatal((http.ListenAndServe(":4000", r)))
 }
 
 // controllers - file
@@ -86,7 +99,6 @@ func createOneCourse(w http.ResponseWriter, r *http.Request) {
 	course.CourseId = strconv.Itoa(rng.Intn(100))
 	courses = append(courses, course)
 	json.NewEncoder(w).Encode(course)
-	return
 }
 
 func updateOneCourse(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +123,7 @@ func updateOneCourse(w http.ResponseWriter, r *http.Request) {
 			course.CourseId = params["id"]
 			courses = append(courses, course)
 			json.NewEncoder(w).Encode(course)
+			return
 		}
 	}
 	// TODO: send res id not found
@@ -126,6 +139,7 @@ func deleteOneCourse(w http.ResponseWriter, r *http.Request) {
 		if course.CourseId == params["id"] {
 			courses = append(courses[:index], courses[index+1:]...)
 			json.NewEncoder(w).Encode("course is deleted successfully")
+			return
 		}
 	}
 	json.NewEncoder(w).Encode("course not found")
